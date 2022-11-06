@@ -1,0 +1,103 @@
+Sub stocklooper()
+
+'set an initial variable for holding the ticker name and worksheet where data will be displayed
+Dim ticker As String
+Set wsA = Worksheets("2018")
+    
+'Name destination headers
+Range("I1") = "Ticker"
+Range("J1") = "Yearly Change"
+Range("K1") = "Percent Change"
+Range("L1") = "Total Stock Volume"
+Range("P1") = "Ticker"
+Range("Q1") = "Value"
+Range("O2") = "Greatest % Increase"
+Range("O3") = "Greatest % Decrease"
+Range("O4") = "Greatest Total Volume"
+
+'set an initial variable for holding the total volume per ticker name
+Dim tot_vol As Double
+tot_vol = 0
+
+'keep track of the location for each ticker name in the summary table
+Dim summary_table_row As Integer
+summary_table_row = 2
+
+'begin for loops of all worksheets for desired info
+For Each ws In Worksheets
+    'find the last row of each sheet
+    lastrow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+        For i = 2 To lastrow
+            'check to see if this is the first entry of this ticker name
+            If ws.Cells(i - 1, 1).Value <> ws.Cells(i, 1).Value Then
+                'add to the volume total
+                tot_vol = tot_vol + ws.Cells(i, 7).Value
+                'set the opening price
+                opening_price = ws.Cells(i, 3).Value
+            'check if we are still in the same ticker name and if not...
+            ElseIf ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+                'set the ticker name
+                ticker = ws.Cells(i, 1).Value
+                'add to the volume total
+                tot_vol = tot_vol + ws.Cells(i, 7).Value
+                'set the closing price
+                closing_price = ws.Cells(i, 6).Value
+                'print the ticker name in the summary table
+                wsA.Range("I" & summary_table_row).Value = ticker
+                'print the volume total to the summary table
+                wsA.Range("L" & summary_table_row).Value = tot_vol
+                'set the yearly_change
+                yearly_change = closing_price - opening_price
+                'print yearly change to summary table
+                wsA.Range("J" & summary_table_row).Value = yearly_change
+                    'conditional format yearly_change
+                    If (yearly_change < 0) Then
+                        wsA.Range("J" & summary_table_row).Interior.ColorIndex = 3
+                    Else
+                        wsA.Range("J" & summary_table_row).Interior.ColorIndex = 4
+                    End If
+                'set the percent change
+                percent_change = (yearly_change / opening_price)
+                'print and format percent change to summary table
+                wsA.Range("K" & summary_table_row).Value = percent_change
+                'format percent_change
+                wsA.Range("K" & summary_table_row).NumberFormat = "0.00%"
+                'add one to the summary table row
+                summary_table_row = summary_table_row + 1
+                'reset the volume total
+                tot_vol = 0
+            'If the cell immediately following a row IS the same ticker
+            Else
+                'add to the volume total
+                tot_vol = tot_vol + ws.Cells(i, 7).Value
+            End If
+        Next i
+Next ws
+
+'set variable for bonus content (bonus search range, last summary table row, biggest increase, biggest decrease and most volume)
+Set bonusrng = Range("I1")
+lastsumrow = bonusrng.End(xlDown).Row
+max_increase = Application.WorksheetFunction.Max(Range("K2:K" & lastsumrow))
+max_decrease = Application.WorksheetFunction.Min(Range("K2:K" & lastsumrow))
+max_volume = Application.WorksheetFunction.Max(Range("L2:L" & lastsumrow))
+
+'loop through summary table for bonus data
+For i = 2 To lastsumrow
+    If Cells(i, 11).Value = max_increase Then
+        Range("P2").Value = Cells(i, 9).Value
+        Range("Q2").Value = Cells(i, 11).Value
+        Range("Q2").NumberFormat = "0.00%"
+    ElseIf Cells(i, 11).Value = max_decrease Then
+        Range("P3").Value = Cells(i, 9).Value
+        Range("Q3").Value = Cells(i, 11).Value
+        Range("Q3").NumberFormat = "0.00%"
+    ElseIf Cells(i, 12).Value = max_volume Then
+        Range("P4").Value = Cells(i, 9).Value
+        Range("Q4").Value = Cells(i, 12).Value
+    End If
+Next i
+
+'format columns now that data is entered everywhere
+wsA.Range("I:R").Columns.AutoFit
+
+End Sub
